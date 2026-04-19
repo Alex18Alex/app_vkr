@@ -5,13 +5,22 @@
     <div class="col-12">
         <h2>Аналитика задолженностей</h2>
         
-        <!-- KPI Cards -->
-        <div class="row mb-4">
+        <!-- Выбор датасета -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <select id="datasetSelect" class="form-select">
+                    <option value="">Выберите датасет...</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- KPI карточки -->
+        <div class="row mb-4" id="kpiCards" style="display: none;">
             <div class="col-md-3">
                 <div class="card text-white bg-primary">
                     <div class="card-body">
                         <h5 class="card-title">Общая задолженность</h5>
-                        <h3 class="card-text" id="total-debt">0 руб.</h3>
+                        <h3 id="total-debt">0 руб.</h3>
                     </div>
                 </div>
             </div>
@@ -19,7 +28,7 @@
                 <div class="card text-white bg-info">
                     <div class="card-body">
                         <h5 class="card-title">Средний долг</h5>
-                        <h3 class="card-text" id="avg-debt">0 руб.</h3>
+                        <h3 id="avg-debt">0 руб.</h3>
                     </div>
                 </div>
             </div>
@@ -27,7 +36,7 @@
                 <div class="card text-white bg-warning">
                     <div class="card-body">
                         <h5 class="card-title">Доля должников</h5>
-                        <h3 class="card-text" id="debtors-pct">0%</h3>
+                        <h3 id="debtors-pct">0%</h3>
                     </div>
                 </div>
             </div>
@@ -35,155 +44,238 @@
                 <div class="card text-white bg-success">
                     <div class="card-body">
                         <h5 class="card-title">Собираемость</h5>
-                        <h3 class="card-text" id="collection-rate">0%</h3>
+                        <h3 id="collection-rate">0%</h3>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Charts -->
+        <!-- Графики в две колонки (компактно) -->
         <div class="row">
-            <div class="col-md-8">
-                <div class="card">
+            <!-- График динамики -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
                     <div class="card-header">
                         <h5>Динамика задолженности</h5>
                     </div>
-                    <div class="card-body">
-                        <canvas id="dynamicsChart" height="250"></canvas>
+                    <div class="card-body text-center">
+                        <div id="dynamicsLoading" class="text-center py-3 text-muted">Загрузка графика...</div>
+                        <img id="dynamicsChart" src="" alt="График динамики" class="img-fluid compact-chart" style="display: none; max-height: 350px; width: auto; margin: 0 auto;">
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card">
+
+            <!-- Круговая диаграмма структуры долга -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
                     <div class="card-header">
                         <h5>Структура долга по услугам</h5>
                     </div>
-                    <div class="card-body">
-                        <canvas id="serviceChart" height="250"></canvas>
+                    <div class="card-body text-center">
+                        <div id="serviceLoading" class="text-center py-3 text-muted">Загрузка графика...</div>
+                        <img id="serviceChart" src="" alt="Структура долга" class="img-fluid compact-chart" style="display: none; max-height: 350px; width: auto; margin: 0 auto;">
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Блок возрастной структуры задолженности -->
-<!-- Вместо canvas -->
-<!-- Возрастная структура задолженности -->
-<div class="card mt-4">
-    <div class="card-header">
-        <h5 class="card-title mb-0">Возрастная структура задолженности</h5>
-    </div>
-    <div class="card-body">
-        <canvas id="agingChart" height="300" style="width: 100%;"></canvas>
-    </div>
-</div>
-
-<!-- Классификация должников -->
-<div class="card mt-4">
-    <div class="card-header">
-        <h5 class="card-title mb-0">Классификация должников по группам риска</h5>
-    </div>
-    <div class="card-body">
-        <canvas id="riskChart" height="300" style="width: 100%;"></canvas>
-    </div>
-</div>
-        <!-- Блок с рекомендациями -->
-        <div class="mt-3">
-            <h6 class="mb-2">📋 Рекомендации по работе с должниками</h6>
-            <div class="row g-2">
-                <div class="col-md-4 col-lg mb-2">
-                    <div class="card border-danger h-100">
-                        <div class="card-header bg-danger text-white py-1 px-2">
-                            <small><strong>🔴 Критический риск</strong></small>
-                        </div>
-                        <div class="card-body py-1 px-2">
-                            <small class="d-block">💰 > 100 000 руб.</small>
-                            <small class="d-block">📌 Немедленная передача в суд</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 col-lg mb-2">
-                    <div class="card border-warning h-100">
-                        <div class="card-header bg-warning text-dark py-1 px-2">
-                            <small><strong>🟠 Высокий риск</strong></small>
-                        </div>
-                        <div class="card-body py-1 px-2">
-                            <small class="d-block">💰 50-100 тыс. руб.</small>
-                            <small class="d-block">📌 Уведомления, звонки</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 col-lg mb-2">
-                    <div class="card border-info h-100">
-                        <div class="card-header bg-info text-white py-1 px-2">
-                            <small><strong>🟡 Средний риск</strong></small>
-                        </div>
-                        <div class="card-body py-1 px-2">
-                            <small class="d-block">💰 20-50 тыс. руб.</small>
-                            <small class="d-block">📌 Звонки, SMS</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 col-lg mb-2">
-                    <div class="card border-success h-100">
-                        <div class="card-header bg-success text-white py-1 px-2">
-                            <small><strong>🟢 Низкий риск</strong></small>
-                        </div>
-                        <div class="card-body py-1 px-2">
-                            <small class="d-block">💰 5-20 тыс. руб.</small>
-                            <small class="d-block">📌 SMS, email</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 col-lg mb-2">
-                    <div class="card border-primary h-100">
-                        <div class="card-header bg-primary text-white py-1 px-2">
-                            <small><strong>🔵 Минимальный риск</strong></small>
-                        </div>
-                        <div class="card-body py-1 px-2">
-                            <small class="d-block">💰 до 5 тыс. руб.</small>
-                            <small class="d-block">📌 Мониторинг</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="alert alert-info mt-2 py-1 mb-0 small">
-                <i class="fas fa-info-circle"></i> Приоритет: Критический → Высокий → Средний → Низкий → Минимальный
-            </div>
-        </div>
-    </div>
-</div>
-
-        <!-- Top Debtors Table -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
+            <!-- Возрастная структура -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
                     <div class="card-header">
-                        <h5>Топ-10 должников</h5>
+                        <h5>Возрастная структура задолженности</h5>
                     </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped" id="debtorsTable">
-                                <thead>
-                                    <tr>
-                                        <th>Лицевой счет</th>
-                                        <th>ФИО</th>
-                                        <th>Адрес</th>
-                                        <th>Сумма долга</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
+                    <div class="card-body text-center">
+                        <div id="agingLoading" class="text-center py-3 text-muted">Загрузка графика...</div>
+                        <img id="agingChart" src="" alt="Возрастная структура" class="img-fluid compact-chart" style="display: none; max-height: 350px; width: auto; margin: 0 auto;">
                     </div>
+                </div>
+            </div>
+
+            <!-- Классификация должников -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5>Классификация должников по группам риска</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div id="riskLoading" class="text-center py-3 text-muted">Загрузка графика...</div>
+                        <img id="riskChart" src="" alt="Классификация" class="img-fluid compact-chart" style="display: none; max-height: 350px; width: auto; margin: 0 auto;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Таблица должников -->
+        <div class="card mt-2">
+            <div class="card-header">
+                <h5>Топ-10 должников</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="debtorsTable">
+                        <thead>
+                            <tr>
+                                <th>Лицевой счет</th>
+                                <th>ФИО</th>
+                                <th>Адрес</th>
+                                <th>Сумма долга</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    /* Компактные графики */
+    .compact-chart {
+        max-height: 320px;
+        width: auto;
+        object-fit: contain;
+    }
+
+    /* Карточки графиков одинаковой высоты */
+    .h-100 {
+        height: 100%;
+    }
+
+    /* Центрирование изображений */
+    .card-body.text-center {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 380px;
+    }
+</style>
 
 <script>
+    let currentDatasetId = null;
+
     document.addEventListener('DOMContentLoaded', function() {
-        loadAnalyticsData({{ dataset_id }});
+        loadDatasets();
     });
+
+    async function loadDatasets() {
+        try {
+            const response = await fetch('/api/datasets');
+            const datasets = await response.json();
+            const select = document.getElementById('datasetSelect');
+            select.innerHTML = '<option value="">Выберите датасет...</option>';
+
+            datasets.forEach(dataset => {
+                const option = document.createElement('option');
+                option.value = dataset.id;
+                option.textContent = `${dataset.name} (${new Date(dataset.upload_date).toLocaleDateString()})`;
+                select.appendChild(option);
+            });
+
+            if (datasets.length > 0) {
+                select.value = datasets[0].id;
+                loadAnalyticsData(datasets[0].id);
+            }
+
+            select.addEventListener('change', function() {
+                if (this.value) {
+                    loadAnalyticsData(this.value);
+                }
+            });
+        } catch (error) {
+            console.error('Error loading datasets:', error);
+        }
+    }
+
+    async function loadAnalyticsData(datasetId) {
+        if (currentDatasetId === datasetId) return;
+        currentDatasetId = datasetId;
+
+        console.log('Loading analytics for dataset:', datasetId);
+
+        // Показываем загрузку
+        document.getElementById('dynamicsLoading').style.display = 'block';
+        document.getElementById('dynamicsChart').style.display = 'none';
+        document.getElementById('serviceLoading').style.display = 'block';
+        document.getElementById('serviceChart').style.display = 'none';
+        document.getElementById('agingLoading').style.display = 'block';
+        document.getElementById('agingChart').style.display = 'none';
+        document.getElementById('riskLoading').style.display = 'block';
+        document.getElementById('riskChart').style.display = 'none';
+
+        try {
+            const response = await fetch(`/api/analytics/${datasetId}`);
+            const data = await response.json();
+
+            console.log('Analytics data received:', data);
+
+            document.getElementById('kpiCards').style.display = 'flex';
+            document.getElementById('total-debt').textContent = formatCurrency(data.kpi.total_debt);
+            document.getElementById('avg-debt').textContent = formatCurrency(data.kpi.avg_debt_per_account);
+            document.getElementById('debtors-pct').textContent = data.kpi.debtors_percentage + '%';
+            document.getElementById('collection-rate').textContent = data.kpi.collection_rate + '%';
+
+            updateDebtorsTable(data.charts.debtors_data);
+
+            await loadChart('/api/chart/dynamics', datasetId, 'dynamicsChart', 'dynamicsLoading');
+            await loadChart('/api/chart/service-structure', datasetId, 'serviceChart', 'serviceLoading');
+            await loadChart('/api/chart/aging', datasetId, 'agingChart', 'agingLoading');
+            await loadChart('/api/chart/risk', datasetId, 'riskChart', 'riskLoading');
+
+        } catch (error) {
+            console.error('Error loading analytics:', error);
+        }
+    }
+
+    async function loadChart(apiUrl, datasetId, imgId, loadingId) {
+        try {
+            const url = `${apiUrl}?dataset_id=${datasetId}`;
+            console.log('Loading chart:', url);
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.image) {
+                const img = document.getElementById(imgId);
+                img.src = 'data:image/png;base64,' + data.image;
+                img.style.display = 'block';
+                document.getElementById(loadingId).style.display = 'none';
+            } else if (data.error) {
+                console.error(`Error in ${apiUrl}:`, data.error);
+                document.getElementById(loadingId).innerHTML = `<span class="text-danger">Ошибка: ${data.error}</span>`;
+            }
+        } catch (error) {
+            console.error(`Error loading ${imgId}:`, error);
+            document.getElementById(loadingId).innerHTML = '<span class="text-danger">Ошибка загрузки</span>';
+        }
+    }
+
+    function updateDebtorsTable(debtorsData) {
+        const tbody = document.querySelector('#debtorsTable tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (!debtorsData || debtorsData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">Нет данных о должниках</td</tr>';
+            return;
+        }
+
+        debtorsData.forEach(debtor => {
+            const row = tbody.insertRow();
+            row.insertCell(0).textContent = debtor.account_id;
+            row.insertCell(1).textContent = debtor.resident_name || '-';
+            row.insertCell(2).textContent = debtor.address || '-';
+            row.insertCell(3).innerHTML = `<span class="text-danger fw-bold">${formatCurrency(debtor.total_debt)}</span>`;
+        });
+    }
+
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('ru-RU', {
+            style: 'currency',
+            currency: 'RUB',
+            minimumFractionDigits: 0
+        }).format(amount);
+    }
 </script>
 {% endblock %}

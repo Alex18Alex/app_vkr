@@ -193,6 +193,54 @@ def forecast():
     return render_template('forecast.html', dataset_id=dataset_id)
 
 
+@app.route('/api/chart/dynamics', methods=['GET'])
+def get_dynamics_chart():
+    dataset_id = request.args.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'Не указан dataset_id'}), 400
+    analyzer = DebtAnalyzer(app.config['DATABASE'])
+    charts_data = analyzer.get_charts_data(dataset_id)
+    visualizer = DataVisualizer()
+    img_base64 = visualizer.create_debt_dynamics_chart(charts_data['dynamic_data'])
+    return jsonify({'image': img_base64})
+
+@app.route('/api/chart/service-structure', methods=['GET'])
+def get_service_chart():
+    dataset_id = request.args.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'Не указан dataset_id'}), 400
+    analyzer = DebtAnalyzer(app.config['DATABASE'])
+    charts_data = analyzer.get_charts_data(dataset_id)
+    visualizer = DataVisualizer()
+    img_base64 = visualizer.create_service_structure_chart(charts_data['service_data'])
+    return jsonify({'image': img_base64})
+
+@app.route('/api/chart/aging', methods=['GET'])
+def get_aging_chart():
+    dataset_id = request.args.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'Не указан dataset_id'}), 400
+    analyzer = DebtAnalyzer(app.config['DATABASE'])
+    aging_data = analyzer.get_debt_aging(dataset_id)
+    if not aging_data:
+        return jsonify({'error': 'Нет данных'}), 404
+    visualizer = DataVisualizer()
+    img_base64 = visualizer.create_aging_chart(aging_data)
+    return jsonify({'image': img_base64})
+
+@app.route('/api/chart/risk', methods=['GET'])
+def get_risk_chart():
+    dataset_id = request.args.get('dataset_id')
+    if not dataset_id:
+        return jsonify({'error': 'Не указан dataset_id'}), 400
+    classifier = DebtorClassifier(app.config['DATABASE'])
+    result = classifier.classify_debtors(dataset_id)
+    if not result or not result.get('statistics', {}).get('by_risk'):
+        return jsonify({'error': 'Нет данных для классификации'}), 404
+    visualizer = DataVisualizer()
+    img_base64 = visualizer.create_risk_chart(result['statistics']['by_risk'])
+    return jsonify({'image': img_base64})
+
 @app.route('/api/debt-aging', methods=['GET'])
 def get_debt_aging():
     """API для получения возрастной структуры задолженности"""
@@ -200,9 +248,18 @@ def get_debt_aging():
     if not dataset_id:
         return jsonify({'error': 'Не указан dataset_id'}), 400
 
-    analyzer = DebtAnalyzer('database/jkhu.db')
-    result = analyzer.get_debt_aging(dataset_id)
-    return jsonify(result)
+    analyzer = DebtAnalyzer(app.config['DATABASE'])
+    visualizer = DataVisualizer()  # ← СОЗДАЕМ ЭКЗЕМПЛЯР
+
+    aging_data = analyzer.get_debt_aging(dataset_id)
+
+    if not aging_data:
+        return jsonify({'error': 'Нет данных'}), 404
+
+    # Используем метод визуализатора
+    img_base64 = visualizer.create_aging_chart(aging_data)
+
+    return jsonify({'image': img_base64})
 
 
 @app.route('/api/debtor-classification', methods=['GET'])
@@ -212,9 +269,44 @@ def get_debtor_classification():
     if not dataset_id:
         return jsonify({'error': 'Не указан dataset_id'}), 400
 
-    classifier = DebtorClassifier('database/jkhu.db')
+    classifier = DebtorClassifier(app.config['DATABASE'])
+    visualizer = DataVisualizer()  # ← СОЗДАЕМ ЭКЗЕМПЛЯР
+
     result = classifier.classify_debtors(dataset_id)
-    return jsonify(result)
+
+    if not result or not result.get('statistics', {}).get('by_risk'):
+        return jsonify({'error': 'Нет данных для классификации'}), 404
+
+    risk_stats = result['statistics']['by_risk']
+
+    # Используем метод визуализатора
+    img_base64 = visualizer.create_risk_chart(risk_stats)
+
+    return jsonify({'image': img_base64})
+
+
+@app.route('/api/forecast-chart', methods=['GET'])
+def get_forecast_chart():
+    """API для получения графика прогноза в виде изображения"""
+    dataset_id = request.args.get('dataset_id')
+    months = request.args.get('months', 6, type=int)
+
+    if not dataset_id:
+        return jsonify({'error': 'Не указан dataset_id'}), 400
+
+    forecaster = DebtForecaster(app.config['DATABASE'])
+    forecast_data = forecaster.generate_forecast(dataset_id, months)
+
+    if 'error' in forecast_data:
+        return jsonify({'error': forecast_data['error']}), 400
+
+    visualizer = DataVisualizer()
+    img_base64 = visualizer.create_forecast_chart_image(
+        forecast_data['historical'],
+        forecast_data['forecast']
+    )
+
+    return jsonify({'image': img_base64})
 
 @app.route('/api/datasets')
 def get_datasets():

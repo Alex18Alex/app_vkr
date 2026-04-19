@@ -3,43 +3,42 @@
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <h2>Прогнозирование задолженностей</h2>
+        <h2>📊 Прогнозирование задолженностей</h2>
         <p class="text-muted">Построение прогнозов динамики задолженностей на основе исторических данных</p>
-        
+
         <!-- Панель управления -->
-        <div class="card">
+        <div class="card mb-4">
             <div class="card-header">
                 <h5 class="card-title mb-0">Параметры прогнозирования</h5>
             </div>
             <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-md-4">
-                        <label for="forecastMonths" class="form-label">Период прогноза:</label>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">📅 Период прогноза:</label>
                         <div class="input-group">
                             <input type="number" class="form-control" id="forecastMonths" value="6" min="3" max="12">
                             <span class="input-group-text">месяцев</span>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <label for="datasetSelect" class="form-label">Датасет для анализа:</label>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">📁 Датасет для анализа:</label>
                         <select class="form-select" id="datasetSelect">
-                            <option value="">Загрузка датасетов...</option>
+                            <option value="">Загрузка...</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4 mb-3">
                         <label class="form-label">&nbsp;</label>
                         <div>
-                            <button class="btn btn-primary" onclick="generateForecast()" id="forecastBtn">
+                            <button class="btn btn-primary" id="forecastBtn">
                                 <i class="fas fa-chart-line"></i> Построить прогноз
                             </button>
-                            <button class="btn btn-outline-secondary" onclick="resetForecast()">
+                            <button class="btn btn-outline-secondary" id="resetBtn">
                                 <i class="fas fa-redo"></i> Сброс
                             </button>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Информация о модели -->
+
                 <div id="modelInfo" class="mt-3" style="display: none;">
                     <div class="alert alert-info">
                         <h6><i class="fas fa-info-circle"></i> Информация о модели</h6>
@@ -49,34 +48,28 @@
             </div>
         </div>
 
-        <!-- График прогноза -->
-        <div class="card mt-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">График прогноза задолженности</h5>
-                <div>
-                    <button class="btn btn-sm btn-outline-success" onclick="exportChartToCSV()" id="exportChartBtn" style="display: none;">
-                        <i class="fas fa-file-csv"></i> CSV
-                    </button>
-                    <button class="btn btn-sm btn-outline-primary" onclick="exportChartToExcel()" id="exportExcelChartBtn" style="display: none;">
-                        <i class="fas fa-file-excel"></i> Excel
-                    </button>
-                </div>
+        <!-- График -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">📈 График прогноза задолженности</h5>
             </div>
-            <div class="card-body">
-                <div id="forecastChartContainer">
-                    <div class="text-center py-5 text-muted" id="noDataMessage">
-                        <i class="fas fa-chart-line fa-3x mb-3"></i>
-                        <p>Выберите параметры и нажмите "Построить прогноз" для отображения графика</p>
-                    </div>
-                    <canvas id="forecastChart" height="300" style="display: none;"></canvas>
+            <div class="card-body text-center">
+                <div id="noDataMessage" class="py-5 text-muted">
+                    <i class="fas fa-chart-line fa-3x mb-3"></i>
+                    <p>Выберите параметры и нажмите "Построить прогноз"</p>
                 </div>
+                <div id="forecastLoading" class="py-5 text-muted" style="display: none;">
+                    <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                    <p>Загрузка графика...</p>
+                </div>
+                <img id="forecastChartImg" src="" class="img-fluid" style="display: none; max-width: 100%;">
             </div>
         </div>
 
-        <!-- Метрики точности -->
-        <div class="row mt-4">
+        <!-- Метрики и интерпретация -->
+        <div class="row mb-4">
             <div class="col-md-6">
-                <div class="card">
+                <div class="card h-100">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Метрики точности прогноза</h5>
                     </div>
@@ -88,20 +81,20 @@
                             <div class="row text-center">
                                 <div class="col-4">
                                     <div class="border rounded p-3">
-                                        <h5 id="maeValue" class="text-warning">-</h5>
-                                        <small class="text-muted">MAE (Средняя абсолютная ошибка)</small>
+                                        <h4 id="maeValue" class="text-warning">-</h4>
+                                        <small>MAE</small>
                                     </div>
                                 </div>
                                 <div class="col-4">
                                     <div class="border rounded p-3">
-                                        <h5 id="rmseValue" class="text-danger">-</h5>
-                                        <small class="text-muted">RMSE (Среднеквадратичная ошибка)</small>
+                                        <h4 id="rmseValue" class="text-danger">-</h4>
+                                        <small>RMSE</small>
                                     </div>
                                 </div>
                                 <div class="col-4">
                                     <div class="border rounded p-3">
-                                        <h5 id="r2Value" class="text-success">-</h5>
-                                        <small class="text-muted">R² (Коэффициент детерминации)</small>
+                                        <h4 id="r2Value" class="text-success">-</h4>
+                                        <small>R²</small>
                                     </div>
                                 </div>
                             </div>
@@ -111,25 +104,18 @@
             </div>
 
             <div class="col-md-6">
-                <div class="card">
+                <div class="card h-100">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Интерпретация результатов</h5>
                     </div>
                     <div class="card-body">
                         <div id="interpretationContent">
-                            <p class="text-muted">После построения прогноза здесь появится интерпретация результатов и рекомендации.</p>
+                            <p class="text-muted">После построения прогноза здесь появится интерпретация</p>
                         </div>
                         <div id="forecastSummary" style="display: none;">
-                            <h6>Ключевые выводы:</h6>
-                            <ul class="list-unstyled" id="forecastInsights">
-                                <!-- Инсайты будут заполнены динамически -->
-                            </ul>
+                            <ul class="list-unstyled" id="forecastInsights"></ul>
                             <div class="alert alert-warning mt-3">
-                                <small>
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <strong>Внимание:</strong> Прогноз основан на исторических данных и может не учитывать внешние факторы.
-                                    Рекомендуется регулярно обновлять данные и пересматривать прогнозы.
-                                </small>
+                                <small>⚠️ Прогноз основан на исторических данных</small>
                             </div>
                         </div>
                     </div>
@@ -137,34 +123,22 @@
             </div>
         </div>
 
-        <!-- Детали прогноза -->
-        <div class="card mt-4">
+        <!-- Таблица -->
+        <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">Детали прогноза по месяцам</h5>
                 <div>
-                    <button class="btn btn-sm btn-outline-success" onclick="exportToCSV()">
-                        <i class="fas fa-file-csv"></i> Экспорт в CSV
-                    </button>
-                    <button class="btn btn-sm btn-outline-primary" onclick="exportToExcel()">
-                        <i class="fas fa-file-excel"></i> Экспорт в Excel
-                    </button>
+                    <button class="btn btn-sm btn-outline-success" id="exportCsvBtn">CSV</button>
+                    <button class="btn btn-sm btn-outline-primary" id="exportExcelBtn">Excel</button>
                 </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-striped" id="forecastTable">
                         <thead class="table-light">
-                            <tr>
-                                <th>Период</th>
-                                <th>Тип</th>
-                                <th>Прогнозируемая задолженность</th>
-                                <th>Доверительный интервал</th>
-                                <th>Примечание</th>
-                            </tr>
+                            <tr><th>Период</th><th>Тип</th><th>Задолженность</th><th>Доверительный интервал</th><th>Примечание</th></tr>
                         </thead>
-                        <tbody>
-                            <!-- Данные будут заполнены динамически -->
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -172,508 +146,157 @@
     </div>
 </div>
 
-<!-- Подключение библиотеки для Excel (более надежная версия) -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- Рабочие CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
-    let forecastChart = null;
     let currentForecastData = null;
 
-    // Инициализация страницы
     document.addEventListener('DOMContentLoaded', function() {
         loadDatasets();
 
-        // Установка текущего датасета из URL параметров
-        const urlParams = new URLSearchParams(window.location.search);
-        const datasetId = urlParams.get('dataset_id');
-        if (datasetId) {
-            setTimeout(() => {
-                document.getElementById('datasetSelect').value = datasetId;
-            }, 1000);
-        }
+        document.getElementById('forecastBtn').onclick = generateForecast;
+        document.getElementById('resetBtn').onclick = resetForecast;
+        document.getElementById('exportCsvBtn').onclick = () => exportData('csv');
+        document.getElementById('exportExcelBtn').onclick = () => exportData('excel');
     });
 
-    // Загрузка списка датасетов
     async function loadDatasets() {
         try {
-            const response = await fetch('/api/datasets');
-            const datasets = await response.json();
-
+            const res = await fetch('/api/datasets');
+            const datasets = await res.json();
             const select = document.getElementById('datasetSelect');
             select.innerHTML = '<option value="">Выберите датасет...</option>';
-
-            datasets.forEach(dataset => {
-                const option = document.createElement('option');
-                option.value = dataset.id;
-                option.textContent = `${dataset.name} (${new Date(dataset.upload_date).toLocaleDateString()})`;
-                select.appendChild(option);
+            datasets.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                opt.textContent = `${d.name} (${new Date(d.upload_date).toLocaleDateString()})`;
+                select.appendChild(opt);
             });
-
-        } catch (error) {
-            console.error('Error loading datasets:', error);
-        }
+            if (datasets.length) select.value = datasets[0].id;
+        } catch(e) { console.error(e); }
     }
 
-    // Генерация прогноза
     async function generateForecast() {
         const datasetId = document.getElementById('datasetSelect').value;
         const months = document.getElementById('forecastMonths').value;
 
-        if (!datasetId) {
-            alert('Пожалуйста, выберите датасет для анализа');
-            return;
-        }
+        if (!datasetId) return Swal.fire('Ошибка', 'Выберите датасет', 'warning');
 
-        const forecastBtn = document.getElementById('forecastBtn');
-        forecastBtn.disabled = true;
-        forecastBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Построение прогноза...';
+        const btn = document.getElementById('forecastBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка...';
+
+        document.getElementById('noDataMessage').style.display = 'none';
+        document.getElementById('forecastLoading').style.display = 'block';
+        document.getElementById('forecastChartImg').style.display = 'none';
 
         try {
+            // 1. Получаем данные прогноза
             const formData = new FormData();
             formData.append('months', months);
+            const res = await fetch(`/forecast?dataset_id=${datasetId}`, { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
 
-            const response = await fetch(`/forecast?dataset_id=${datasetId}`, {
-                method: 'POST',
-                body: formData
+            currentForecastData = data;
+
+            // 2. Обновляем метрики
+            document.getElementById('accuracyMetrics').style.display = 'none';
+            document.getElementById('metricsContent').style.display = 'block';
+            document.getElementById('maeValue').textContent = Math.round(data.accuracy_metrics.mae) + ' ₽';
+            document.getElementById('rmseValue').textContent = Math.round(data.accuracy_metrics.rmse) + ' ₽';
+            document.getElementById('r2Value').textContent = data.accuracy_metrics.r_squared;
+
+            // 3. Интерпретация
+            const lastHist = data.historical[data.historical.length-1];
+            const lastFore = data.forecast[data.forecast.length-1];
+            const growth = ((lastFore.debt - lastHist.debt)/lastHist.debt*100).toFixed(1);
+
+            document.getElementById('interpretationContent').style.display = 'none';
+            document.getElementById('forecastSummary').style.display = 'block';
+            document.getElementById('forecastInsights').innerHTML = `
+                <li>💰 Текущая: ${formatCurrency(lastHist.debt)}</li>
+                <li>📈 Прогноз: ${formatCurrency(lastFore.debt)}</li>
+                <li>📊 Рост: ${growth}%</li>
+                <li>📅 Период: ${data.forecast.length} мес.</li>
+            `;
+
+            // 4. Инфо о модели
+            document.getElementById('modelInfo').style.display = 'block';
+            document.getElementById('modelDetails').innerHTML = `
+                <p><strong>Алгоритм:</strong> Линейная регрессия</p>
+                <p><strong>История:</strong> ${data.historical.length} периодов</p>
+                <p><strong>R²:</strong> ${data.accuracy_metrics.r_squared}</p>
+            `;
+
+            // 5. Таблица
+            const tbody = document.querySelector('#forecastTable tbody');
+            tbody.innerHTML = '';
+            data.historical.forEach(item => {
+                tbody.innerHTML += `<tr><td>${item.period}</td><td><span class="badge bg-primary">История</span></td><td>${formatCurrency(item.debt)}</td><td>-</td><td>Факт</td></tr>`;
+            });
+            data.forecast.forEach((item, idx) => {
+                tbody.innerHTML += `<tr class="table-warning"><td><strong>${item.period}</strong></td><td><span class="badge bg-warning">Прогноз</span></td><td><strong>${formatCurrency(item.debt)}</strong></td><td>${formatCurrency(item.lower_bound)} - ${formatCurrency(item.upper_bound)}</td><td>${idx===0 ? 'Ближайший' : 'Долгосрочный'}</td></tr>`;
             });
 
-            const result = await response.json();
-
-            if (result.error) {
-                throw new Error(result.error);
+            // 6. График через DataVisualizer
+            const chartRes = await fetch(`/api/forecast-chart?dataset_id=${datasetId}&months=${months}`);
+            const chartData = await chartRes.json();
+            if (chartData.image) {
+                document.getElementById('forecastChartImg').src = 'data:image/png;base64,' + chartData.image;
+                document.getElementById('forecastChartImg').style.display = 'block';
+                document.getElementById('forecastLoading').style.display = 'none';
             }
 
-            currentForecastData = result;
-            displayForecastResult(result);
-
-        } catch (error) {
-            alert('Ошибка при построении прогноза: ' + error.message);
+        } catch(e) {
+            console.error(e);
+            Swal.fire('Ошибка', e.message, 'error');
+            document.getElementById('noDataMessage').style.display = 'block';
+            document.getElementById('forecastLoading').style.display = 'none';
         } finally {
-            forecastBtn.disabled = false;
-            forecastBtn.innerHTML = '<i class="fas fa-chart-line"></i> Построить прогноз';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-chart-line"></i> Построить прогноз';
         }
     }
 
-    // Отображение результатов прогноза
-    function displayForecastResult(data) {
-        // Скрываем сообщение об отсутствии данных
-        document.getElementById('noDataMessage').style.display = 'none';
-        document.getElementById('forecastChart').style.display = 'block';
-
-        // Показываем кнопки экспорта
-        document.getElementById('exportChartBtn').style.display = 'inline-block';
-        document.getElementById('exportExcelChartBtn').style.display = 'inline-block';
-
-        // Создаем график
-        createForecastChart(data);
-
-        // Обновляем метрики точности
-        updateAccuracyMetrics(data.accuracy_metrics);
-
-        // Заполняем таблицу деталей
-        updateForecastTable(data);
-
-        // Показываем интерпретацию
-        showInterpretation(data);
-
-        // Показываем информацию о модели
-        showModelInfo(data);
-    }
-
-    // Создание графика прогноза
-    function createForecastChart(data) {
-        const ctx = document.getElementById('forecastChart').getContext('2d');
-
-        // Уничтожаем предыдущий график если существует
-        if (forecastChart) {
-            forecastChart.destroy();
-        }
-
-        const historicalLabels = data.historical.map(item => item.period);
-        const historicalData = data.historical.map(item => item.debt);
-
-        const forecastLabels = data.forecast.map(item => item.period);
-        const forecastData = data.forecast.map(item => item.debt);
-
-        const allLabels = [...historicalLabels, ...forecastLabels];
-
-        forecastChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: allLabels,
-                datasets: [
-                    {
-                        label: 'Исторические данные',
-                        data: historicalData,
-                        borderColor: 'rgb(54, 162, 235)',
-                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                        tension: 0.1,
-                        fill: false
-                    },
-                    {
-                        label: 'Прогноз',
-                        data: [...historicalData, ...forecastData],
-                        borderColor: 'rgb(255, 99, 132)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                        borderDash: [5, 5],
-                        tension: 0.1,
-                        fill: false
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Прогноз динамики задолженности'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ${formatCurrency(context.raw)}`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return formatCurrency(value);
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    // Обновление метрик точности
-    function updateAccuracyMetrics(metrics) {
-        document.getElementById('accuracyMetrics').style.display = 'none';
-        document.getElementById('metricsContent').style.display = 'block';
-
-        document.getElementById('maeValue').textContent = formatNumber(metrics.mae) + ' руб.';
-        document.getElementById('rmseValue').textContent = formatNumber(metrics.rmse) + ' руб.';
-        document.getElementById('r2Value').textContent = metrics.r_squared;
-    }
-
-    // Обновление таблицы прогноза
-    function updateForecastTable(data) {
-        const tbody = document.querySelector('#forecastTable tbody');
-        tbody.innerHTML = '';
-
-        // Добавляем исторические данные
-        data.historical.forEach(item => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${item.period}</td>
-                <td><span class="badge bg-primary">История</span></td>
-                <td>${formatCurrency(item.debt)}</td>
-                <td>-</td>
-                <td>Фактические данные</td>
-            `;
-            tbody.appendChild(row);
-        });
-
-        // Добавляем прогнозные данные
-        data.forecast.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.className = 'table-warning';
-
-            row.innerHTML = `
-                <td><strong>${item.period}</strong></td>
-                <td><span class="badge bg-warning">Прогноз</span></td>
-                <td><strong>${formatCurrency(item.debt)}</strong></td>
-                <td>${item.lower_bound ? formatCurrency(item.lower_bound) + ' - ' + formatCurrency(item.upper_bound) : '± ' + formatCurrency(item.debt * 0.1)}</td>
-                <td>${index === 0 ? 'Ближайший прогноз' : 'Долгосрочный прогноз'}</td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-
-    // Показ интерпретации результатов
-    function showInterpretation(data) {
-        document.getElementById('interpretationContent').style.display = 'none';
-        document.getElementById('forecastSummary').style.display = 'block';
-
-        const insightsList = document.getElementById('forecastInsights');
-        insightsList.innerHTML = '';
-
-        const lastHistorical = data.historical[data.historical.length - 1];
-        const lastForecast = data.forecast[data.forecast.length - 1];
-
-        const growth = ((lastForecast.debt - lastHistorical.debt) / lastHistorical.debt * 100).toFixed(1);
-
-        const insights = [
-            `Текущая задолженность: <strong>${formatCurrency(lastHistorical.debt)}</strong>`,
-            `Прогноз на конец периода: <strong>${formatCurrency(lastForecast.debt)}</strong>`,
-            `Ожидаемый рост: <strong class="${growth >= 0 ? 'text-danger' : 'text-success'}">${growth}%</strong>`,
-            `Период прогноза: <strong>${data.forecast.length} месяцев</strong>`,
-            `Модель: <strong>${data.model_info}</strong>`
-        ];
-
-        insights.forEach(insight => {
-            const li = document.createElement('li');
-            li.className = 'mb-2';
-            li.innerHTML = `<i class="fas fa-chart-line text-primary me-2"></i>${insight}`;
-            insightsList.appendChild(li);
-        });
-    }
-
-    // Показ информации о модели
-    function showModelInfo(data) {
-        document.getElementById('modelInfo').style.display = 'block';
-        document.getElementById('modelDetails').innerHTML = `
-            <p><strong>Алгоритм:</strong> ${data.model_info}</p>
-            <p><strong>Количество исторических периодов:</strong> ${data.historical.length}</p>
-            <p><strong>Период прогноза:</strong> ${data.forecast_months} месяцев</p>
-            <p><strong>Качество модели:</strong>
-                <span class="badge ${data.accuracy_metrics.r_squared > 0.8 ? 'bg-success' : data.accuracy_metrics.r_squared > 0.6 ? 'bg-warning' : 'bg-danger'}">
-                    R² = ${data.accuracy_metrics.r_squared}
-                </span>
-            </p>
-        `;
-    }
-
-    // Сброс прогноза
     function resetForecast() {
         document.getElementById('noDataMessage').style.display = 'block';
-        document.getElementById('forecastChart').style.display = 'none';
+        document.getElementById('forecastChartImg').style.display = 'none';
+        document.getElementById('forecastLoading').style.display = 'none';
         document.getElementById('modelInfo').style.display = 'none';
         document.getElementById('metricsContent').style.display = 'none';
+        document.getElementById('accuracyMetrics').style.display = 'block';
         document.getElementById('forecastSummary').style.display = 'none';
         document.getElementById('interpretationContent').style.display = 'block';
-        document.getElementById('exportChartBtn').style.display = 'none';
-        document.getElementById('exportExcelChartBtn').style.display = 'none';
-
         document.querySelector('#forecastTable tbody').innerHTML = '';
-
-        if (forecastChart) {
-            forecastChart.destroy();
-            forecastChart = null;
-        }
-
         currentForecastData = null;
     }
 
-    // Функция для подготовки данных к экспорту
-    function prepareExportData() {
-    if (!currentForecastData) {
-        alert('Сначала постройте прогноз');
-        return null;
-    }
+    function exportData(type) {
+        if (!currentForecastData) return Swal.fire('Ошибка', 'Сначала постройте прогноз', 'warning');
 
-    const rows = [];
+        const rows = [['Период', 'Тип', 'Задолженность', 'Нижняя граница', 'Верхняя граница']];
+        currentForecastData.historical.forEach(i => rows.push([i.period, 'История', i.debt, '', '']));
+        currentForecastData.forecast.forEach(i => rows.push([i.period, 'Прогноз', i.debt, i.lower_bound, i.upper_bound]));
 
-    // Метаданные
-    const datasetSelect = document.getElementById('datasetSelect');
-    const datasetName = datasetSelect.selectedOptions[0]?.text || 'Не выбран';
-    const months = document.getElementById('forecastMonths').value;
-
-    rows.push(['ОТЧЕТ ПО ПРОГНОЗИРОВАНИЮ ЗАДОЛЖЕННОСТИ ЖКУ']);
-    rows.push(['Дата формирования:', new Date().toLocaleString('ru-RU')]);
-    rows.push(['Датасет:', datasetName]);
-    rows.push(['Период прогноза:', months + ' месяцев']);
-    rows.push([]);
-
-    // Заголовки таблицы
-    rows.push(['Период', 'Тип', 'Задолженность (руб)', 'Нижняя граница', 'Верхняя граница', 'Примечание']);
-
-    // Исторические данные
-    currentForecastData.historical.forEach(item => {
-        rows.push([
-            item.period,
-            'История',
-            formatNumber(item.debt),
-            '',
-            '',
-            'Фактические данные'
-        ]);
-    });
-
-    // Прогнозные данные
-    currentForecastData.forecast.forEach((item, index) => {
-        rows.push([
-            item.period,
-            'Прогноз',
-            formatNumber(item.debt),
-            formatNumber(item.lower_bound || item.debt * 0.9),
-            formatNumber(item.upper_bound || item.debt * 1.1),
-            index === 0 ? 'Ближайший прогноз' : 'Долгосрочный прогноз'
-        ]);
-    });
-
-    // Итоги
-    rows.push([]);
-    const totalHistorical = currentForecastData.historical.reduce((sum, item) => sum + item.debt, 0);
-    const totalForecast = currentForecastData.forecast.reduce((sum, item) => sum + item.debt, 0);
-
-    rows.push(['ИТОГОВЫЕ СУММЫ:']);
-    rows.push(['Сумма исторических данных:', formatNumber(totalHistorical) + ' руб.']);
-    rows.push(['Сумма прогнозных данных:', formatNumber(totalForecast) + ' руб.']);
-    rows.push([]);
-
-    // Метрики точности
-    rows.push(['МЕТРИКИ ТОЧНОСТИ']);
-    rows.push(['MAE (Средняя абсолютная ошибка):', formatNumber(currentForecastData.accuracy_metrics.mae) + ' руб.']);
-    rows.push(['RMSE (Среднеквадратичная ошибка):', formatNumber(currentForecastData.accuracy_metrics.rmse) + ' руб.']);
-    rows.push(['R² (Коэффициент детерминации):', currentForecastData.accuracy_metrics.r_squared]);
-
-    return rows;
-}
-
-    // Экспорт в CSV
-    function exportToCSV() {
-        const data = prepareExportData();
-        if (!data) return;
-
-        let csvContent = '';
-        data.forEach(row => {
-            csvContent += row.join(';') + '\n';
-        });
-
-        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `prognoz_${new Date().toISOString().slice(0,10)}.csv`;
-        link.click();
-    }
-
-    // Экспорт в Excel (исправленная версия)
-    function exportToExcel() {
-        const data = prepareExportData();
-        if (!data) return;
-
-        try {
-            // Создаем новую книгу
+        if (type === 'csv') {
+            let csv = rows.map(r => r.join(';')).join('\n');
+            const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `prognoz_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+        } else {
             const wb = XLSX.utils.book_new();
-
-            // Преобразуем данные в лист
-            const ws = XLSX.utils.aoa_to_sheet(data);
-
-            // Добавляем лист в книгу
-            XLSX.utils.book_append_sheet(wb, ws, 'Прогноз');
-
-            // Сохраняем файл
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Прогноз');
             XLSX.writeFile(wb, `prognoz_${new Date().toISOString().slice(0,10)}.xlsx`);
-
-            console.log('Excel файл успешно создан');
-        } catch (error) {
-            console.error('Ошибка при создании Excel:', error);
-            alert('Ошибка при создании Excel файла: ' + error.message);
         }
     }
 
-    // Экспорт данных графика в CSV
-    function exportChartToCSV() {
-        if (!currentForecastData) {
-            alert('Сначала постройте прогноз');
-            return;
-        }
-
-        const rows = [
-            ['Период', 'Исторические данные', 'Прогноз']
-        ];
-
-        const allPeriods = [
-            ...currentForecastData.historical.map(item => item.period),
-            ...currentForecastData.forecast.map(item => item.period)
-        ];
-
-        const historicalMap = {};
-        currentForecastData.historical.forEach(item => {
-            historicalMap[item.period] = item.debt;
-        });
-
-        const forecastMap = {};
-        currentForecastData.forecast.forEach(item => {
-            forecastMap[item.period] = item.debt;
-        });
-
-        allPeriods.forEach(period => {
-            rows.push([
-                period,
-                historicalMap[period] || '',
-                forecastMap[period] || ''
-            ]);
-        });
-
-        let csvContent = '';
-        rows.forEach(row => {
-            csvContent += row.join(';') + '\n';
-        });
-
-        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `graf_${new Date().toISOString().slice(0,10)}.csv`;
-        link.click();
-    }
-
-    // Экспорт данных графика в Excel (исправленная версия)
-    function exportChartToExcel() {
-        if (!currentForecastData) {
-            alert('Сначала постройте прогноз');
-            return;
-        }
-
-        try {
-            const rows = [
-                ['Период', 'Исторические данные', 'Прогноз']
-            ];
-
-            const allPeriods = [
-                ...currentForecastData.historical.map(item => item.period),
-                ...currentForecastData.forecast.map(item => item.period)
-            ];
-
-            const historicalMap = {};
-            currentForecastData.historical.forEach(item => {
-                historicalMap[item.period] = item.debt;
-            });
-
-            const forecastMap = {};
-            currentForecastData.forecast.forEach(item => {
-                forecastMap[item.period] = item.debt;
-            });
-
-            allPeriods.forEach(period => {
-                rows.push([
-                    period,
-                    historicalMap[period] || '',
-                    forecastMap[period] || ''
-                ]);
-            });
-
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(rows);
-            XLSX.utils.book_append_sheet(wb, ws, 'График');
-            XLSX.writeFile(wb, `graf_${new Date().toISOString().slice(0,10)}.xlsx`);
-
-            console.log('Excel файл графика успешно создан');
-        } catch (error) {
-            console.error('Ошибка при создании Excel графика:', error);
-            alert('Ошибка при создании Excel файла: ' + error.message);
-        }
-    }
-
-    // Форматирование валюты
     function formatCurrency(amount) {
-        return new Intl.NumberFormat('ru-RU', {
-            style: 'currency',
-            currency: 'RUB',
-            minimumFractionDigits: 0
-        }).format(amount);
-    }
-
-    // Форматирование числа без валюты
-    function formatNumber(num) {
-        return Math.round(num).toLocaleString('ru-RU');
+        return new Intl.NumberFormat('ru-RU', {style: 'currency', currency: 'RUB', minimumFractionDigits: 0}).format(amount);
     }
 </script>
 {% endblock %}

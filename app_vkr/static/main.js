@@ -1,8 +1,5 @@
 // Глобальные переменные
-let dynamicsChart = null;
-let serviceChart = null;
-let agingChart = null;
-let riskChart = null;
+let currentDatasetId = null;
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', function() {
@@ -29,13 +26,18 @@ async function loadDatasets() {
 
         const urlParams = new URLSearchParams(window.location.search);
         const datasetId = urlParams.get('dataset_id');
-        if (datasetId) {
+        if (datasetId && datasets.length > 0) {
             select.value = datasetId;
             loadAnalyticsData(datasetId);
+        } else if (datasets.length > 0) {
+            select.value = datasets[0].id;
+            loadAnalyticsData(datasets[0].id);
         }
 
         select.addEventListener('change', function() {
-            if (this.value) loadAnalyticsData(this.value);
+            if (this.value) {
+                loadAnalyticsData(this.value);
+            }
         });
     } catch (error) {
         console.error('Error loading datasets:', error);
@@ -44,142 +46,74 @@ async function loadDatasets() {
 
 // Загрузка данных аналитики
 async function loadAnalyticsData(datasetId) {
-    console.log('Loading dataset:', datasetId);
+    if (currentDatasetId === datasetId) return;
+    currentDatasetId = datasetId;
+
+    console.log('Loading analytics for dataset:', datasetId);
+
+    // Показываем индикаторы загрузки для всех графиков
+    showLoadingIndicators();
 
     try {
-        // Загружаем основные данные
+        // Загружаем KPI и таблицу
         const response = await fetch(`/api/analytics/${datasetId}`);
         const data = await response.json();
 
         updateKPICards(data.kpi);
         updateDebtorsTable(data.charts.debtors_data);
 
-        // Обновляем основные графики
-        updateDynamicsChart(data.charts.dynamic_data);
-        updateServiceChart(data.charts.service_data);
-
-        // Загружаем дополнительные данные
-        await loadDebtAgingData(datasetId);
-        await loadDebtorClassificationData(datasetId);
+        // Загружаем все графики через DataVisualizer
+        await loadChart('/api/chart/dynamics', datasetId, 'dynamicsChart', 'dynamicsLoading');
+        await loadChart('/api/chart/service-structure', datasetId, 'serviceChart', 'serviceLoading');
+        await loadChart('/api/chart/aging', datasetId, 'agingChart', 'agingLoading');
+        await loadChart('/api/chart/risk', datasetId, 'riskChart', 'riskLoading');
 
     } catch (error) {
         console.error('Error loading analytics:', error);
     }
 }
 
-// Загрузка возрастной структуры
-async function loadDebtAgingData(datasetId) {
-    try {
-        const response = await fetch(`/api/debt-aging?dataset_id=${datasetId}`);
-        const agingData = await response.json();
+// Показать индикаторы загрузки
+function showLoadingIndicators() {
+    const loadingElements = ['dynamicsLoading', 'serviceLoading', 'agingLoading', 'riskLoading'];
+    const imgElements = ['dynamicsChart', 'serviceChart', 'agingChart', 'riskChart'];
 
-        const canvas = document.getElementById('agingChart');
-        if (!canvas) {
-            console.error('Canvas agingChart not found');
-            return;
-        }
-
-        const ctx = canvas.getContext('2d');
-
-        // Уничтожаем старый график
-        if (agingChart) {
-            agingChart.destroy();
-            agingChart = null;
-        }
-
-        // Очищаем canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Создаем новый график
-        agingChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: Object.keys(agingData),
-                datasets: [{
-                    label: 'Сумма задолженности (руб.)',
-                    data: Object.values(agingData),
-                    backgroundColor: ['#28a745', '#ffc107', '#fd7e14', '#dc3545']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return value.toLocaleString() + ' ₽';
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        console.log('Aging chart created');
-
-    } catch(e) {
-        console.error('Aging error:', e);
-    }
+    loadingElements.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'block';
+    });
+    imgElements.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
 }
 
-// Загрузка классификации должников
-async function loadDebtorClassificationData(datasetId) {
+// Загрузка одного графика
+async function loadChart(apiUrl, datasetId, imgId, loadingId) {
+    const img = document.getElementById(imgId);
+    if (!img) {
+        // Элемента нет на этой странице, просто выходим
+        console.log(`Element ${imgId} not found on this page, skipping`);
+        return;
+    }
+
+    const loading = document.getElementById(loadingId);
+
     try {
-        const response = await fetch(`/api/debtor-classification?dataset_id=${datasetId}`);
-        const riskData = await response.json();
+        const response = await fetch(`${apiUrl}?dataset_id=${datasetId}`);
+        const data = await response.json();
 
-        const canvas = document.getElementById('riskChart');
-        if (!canvas) {
-            console.error('Canvas riskChart not found');
-            return;
+        if (data.image) {
+            img.src = 'data:image/png;base64,' + data.image;
+            img.style.display = 'block';
+            if (loading) loading.style.display = 'none';
+        } else if (data.error) {
+            console.error(`Error in ${apiUrl}:`, data.error);
+            if (loading) loading.innerHTML = `<span class="text-danger">Ошибка: ${data.error}</span>`;
         }
-
-        const ctx = canvas.getContext('2d');
-
-        // Уничтожаем старый график
-        if (riskChart) {
-            riskChart.destroy();
-            riskChart = null;
-        }
-
-        // Очищаем canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        if (riskData.statistics && Object.keys(riskData.statistics.by_risk).length > 0) {
-            const labels = Object.keys(riskData.statistics.by_risk);
-            const values = Object.values(riskData.statistics.by_risk);
-            const colors = {
-                'Критический': '#dc3545',
-                'Высокий': '#fd7e14',
-                'Средний': '#ffc107',
-                'Низкий': '#28a745',
-                'Минимальный': '#17a2b8'
-            };
-
-            riskChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: labels.map(l => colors[l] || '#6c757d')
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
-                }
-            });
-            console.log('Risk chart created');
-        }
-    } catch(e) {
-        console.error('Risk error:', e);
+    } catch (error) {
+        console.error(`Error loading ${imgId}:`, error);
+        if (loading) loading.innerHTML = '<span class="text-danger">Ошибка загрузки</span>';
     }
 }
 
@@ -196,98 +130,6 @@ function updateKPICards(kpi) {
     if (collectionRate) collectionRate.textContent = kpi.collection_rate + '%';
 }
 
-// График динамики
-function updateDynamicsChart(data) {
-    const canvas = document.getElementById('dynamicsChart');
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-
-    if (dynamicsChart) {
-        dynamicsChart.destroy();
-        dynamicsChart = null;
-    }
-
-    dynamicsChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: data.periods,
-            datasets: [
-                {
-                    label: 'Начисления',
-                    data: data.charges,
-                    borderColor: 'rgb(54, 162, 235)',
-                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                    fill: false,
-                    tension: 0.1
-                },
-                {
-                    label: 'Платежи',
-                    data: data.payments,
-                    borderColor: 'rgb(75, 192, 192)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                    fill: false,
-                    tension: 0.1
-                },
-                {
-                    label: 'Задолженность',
-                    data: data.debts,
-                    borderColor: 'rgb(255, 99, 132)',
-                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                    fill: false,
-                    tension: 0.1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            plugins: {
-                title: { display: true, text: 'Динамика начислений, платежей и задолженностей' }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { callback: function(value) { return formatCurrency(value); } }
-                }
-            }
-        }
-    });
-}
-
-// Круговая диаграмма услуг
-function updateServiceChart(data) {
-    const canvas = document.getElementById('serviceChart');
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-
-    if (serviceChart) {
-        serviceChart.destroy();
-        serviceChart = null;
-    }
-
-    serviceChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: data.services,
-            datasets: [{
-                data: data.debts,
-                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            plugins: {
-                legend: { position: 'bottom' }
-            }
-        }
-    });
-}
-
 // Обновление таблицы должников
 function updateDebtorsTable(debtorsData) {
     const tbody = document.querySelector('#debtorsTable tbody');
@@ -295,19 +137,16 @@ function updateDebtorsTable(debtorsData) {
     tbody.innerHTML = '';
 
     if (!debtorsData || debtorsData.length === 0) {
-        tbody.innerHTML = '苦<td colspan="4" class="text-center">Нет данных о должниках</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Нет данных о должниках</td></tr>';
         return;
     }
 
     debtorsData.forEach(debtor => {
-        tbody.innerHTML += `
-            <tr>
-                <td>${debtor.account_id}</td>
-                <td>${debtor.resident_name || '-'}</td>
-                <td>${debtor.address || '-'}</td>
-                <td class="text-danger fw-bold">${formatCurrency(debtor.total_debt)}</td>
-            </tr>
-        `;
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = debtor.account_id;
+        row.insertCell(1).textContent = debtor.resident_name || '-';
+        row.insertCell(2).textContent = debtor.address || '-';
+        row.insertCell(3).innerHTML = `<span class="text-danger fw-bold">${formatCurrency(debtor.total_debt)}</span>`;
     });
 }
 
@@ -320,7 +159,7 @@ function formatCurrency(amount) {
     }).format(amount);
 }
 
-// Обработка загрузки файлов
+// Обработка загрузки файлов (для страницы upload)
 function setupFileUpload() {
     const fileInput = document.getElementById('fileInput');
     const uploadArea = document.getElementById('uploadArea');
@@ -355,7 +194,7 @@ async function handleFileUpload() {
     const submitBtn = document.getElementById('submitBtn');
     const statusDiv = document.getElementById('uploadStatus');
 
-    if (!fileInput.files.length) return;
+    if (!fileInput || !fileInput.files.length) return;
 
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
